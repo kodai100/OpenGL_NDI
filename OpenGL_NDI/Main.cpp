@@ -50,7 +50,7 @@ void generate_buffers() {
 
 bool initialize() {
 
-	// GLFW
+	// GLFW -----------
 	if (glfwInit() == GL_FALSE) {
 		std::cerr << "Can't initilize GLFW" << std::endl;
 		return false;
@@ -67,20 +67,19 @@ bool initialize() {
 	glfwSwapInterval(1);
 
 
-	// GLEW
+	// GLEW -----------
 	GLenum err = glewInit();
 	if (err != GLEW_OK) {
 		std::cerr << "Can't initilize GLEW" << std::endl;
 		return false;
 	}
 
-	// GL
+	// GL -----------
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glOrtho(0.0f, WIDTH, 0.0f, HEIGHT, -1.0f, 1.0f);
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
-	// set vertex position
 	static const GLfloat vtx[] = {
 		0, 0,
 		WIDTH, 0,
@@ -89,25 +88,23 @@ bool initialize() {
 	};
 	glVertexPointer(2, GL_FLOAT, 0, vtx);
 
-	// set uv coordinate
-	static const GLfloat texuv[] = {
+	static const GLfloat uv[] = {
 		0.0f, 1.0f,
 		1.0f, 1.0f,
 		1.0f, 0.0f,
 		0.0f, 0.0f,
 	};
-	glTexCoordPointer(2, GL_FLOAT, 0, texuv);
+	glTexCoordPointer(2, GL_FLOAT, 0, uv);
 
 
-
-	// Create buffers
+	// Create buffers -----------
 	generate_buffers();
 	
 
 
-	// NDI
+	// NDI -----------
 	if (!NDIlib_initialize()) {
-		// NDIlib_is_supported_CPU()関数で、対応しているCPUであるかを調査できる。
+		// we can check supported cpu like NDIlib_is_supported_CPU();
 		printf("Cannot run NDI.");
 		return false;
 	}
@@ -119,24 +116,23 @@ bool initialize() {
 NDIlib_recv_instance_t NDIProcess() {
 
 	// Create source finder
-	const NDIlib_find_create_t NDI_find_create_desc; /* Use defaults */
+	const NDIlib_find_create_t NDI_find_create_desc;
 	NDIlib_find_instance_t pNDI_find = NDIlib_find_create_v2(&NDI_find_create_desc);
 	if (!pNDI_find) return NULL;
 
-	// 最低限1つのソースが見つかるまで待機
+	// wait detection at least one source
 	uint32_t no_sources = 0;
 	const NDIlib_source_t* p_sources = NULL;
-	while (!exit_loop && !no_sources) {	// Wait until the sources on the nwtork have changed
+	while (!exit_loop && !no_sources) {	
+		// Wait until the sources on the nwtork have changed
 		NDIlib_find_wait_for_sources(pNDI_find, 1000);
 		p_sources = NDIlib_find_get_current_sources(pNDI_find, &no_sources);
 	}
 	if (!p_sources) return NULL;
 
-	// ソースが発見された場合の処理 -> レシーバーを作成し、ソースをルックアップする
-	// YCbCrで受信するのが好ましい。
-	// ソースがアルファチャンネルを持っている場合、BGRAで引き続き提供される。
+	// better for receive as YCbCr
 	NDIlib_recv_create_t NDI_recv_create_desc;
-	NDI_recv_create_desc.source_to_connect_to = p_sources[0];	// ソース0番を参照
+	NDI_recv_create_desc.source_to_connect_to = p_sources[0];
 
 	NDIlib_recv_instance_t pNDI_recv = NDIlib_recv_create_v2(&NDI_recv_create_desc);
 	if (!pNDI_recv) return NULL;
